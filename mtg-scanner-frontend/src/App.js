@@ -100,7 +100,7 @@ function MTGDecklistApp() {
     formData.append('image', imageFile);
 
     try {
-      const response = await fetch('http://localhost:3001/api/analyze-decklist', {
+      const response = await fetch('https://mtg-draft-scanner-production.up.railway.app/api/analyze-decklist', {
         method: 'POST',
         body: formData,
       });
