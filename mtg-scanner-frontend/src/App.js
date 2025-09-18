@@ -14,29 +14,35 @@ function MTGDecklistApp() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-const compressImage = async (file, maxWidth = 800, quality = 0.6) => {
+const compressImage = async (file, maxSizeMB = 3.8) => {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
     img.onload = () => {
-      // More aggressive sizing - target under 500KB
+      // Start with original dimensions if reasonable, or scale down
       let { width, height } = img;
+      const maxDimension = 2000; // Allow larger images for better text quality
       
-      // Calculate ratio to fit within maxWidth x maxWidth box
-      const ratio = Math.min(maxWidth / width, maxWidth / height);
+      if (width > maxDimension || height > maxDimension) {
+        const ratio = Math.min(maxDimension / width, maxDimension / height);
+        width *= ratio;
+        height *= ratio;
+      }
       
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.drawImage(img, 0, 0, width, height);
       
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Start with high quality and adjust if needed
+      const targetSize = maxSizeMB * 1024 * 1024;
+      let quality = 0.9;
       
-      // Try multiple quality levels if needed
       const tryCompress = (qual) => {
         canvas.toBlob((blob) => {
-          console.log(`Compressed with quality ${qual}: ${blob.size} bytes`);
-          if (blob.size > 2000000 && qual > 0.3) { // If still > 2MB, try lower quality
+          console.log(`Quality ${qual}: ${Math.round(blob.size/1024)}KB`);
+          if (blob.size > targetSize && qual > 0.6) {
             tryCompress(qual - 0.1);
           } else {
             resolve(blob);
@@ -50,7 +56,6 @@ const compressImage = async (file, maxWidth = 800, quality = 0.6) => {
     img.src = URL.createObjectURL(file);
   });
 };
-
   // Parse Azure Document Intelligence response
   const parseAzureResponse = (azureResponse) => {
     console.log('Parsing Azure response:', azureResponse);
