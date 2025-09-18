@@ -14,31 +14,42 @@ function MTGDecklistApp() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  // Image compression function to handle mobile photos
-  const compressImage = async (file, maxWidth = 1200, quality = 0.8) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
+const compressImage = async (file, maxWidth = 800, quality = 0.6) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      // More aggressive sizing - target under 500KB
+      let { width, height } = img;
       
-      img.onload = () => {
-        // Calculate new dimensions to stay under Azure's size limits
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
-        canvas.width = img.width * ratio;
-        canvas.height = img.height * ratio;
-        
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // Convert to blob with compression
+      // Calculate ratio to fit within maxWidth x maxWidth box
+      const ratio = Math.min(maxWidth / width, maxWidth / height);
+      
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      // Try multiple quality levels if needed
+      const tryCompress = (qual) => {
         canvas.toBlob((blob) => {
-          console.log(`Compressed image: ${file.size} bytes -> ${blob.size} bytes`);
-          resolve(blob);
-        }, 'image/jpeg', quality);
+          console.log(`Compressed with quality ${qual}: ${blob.size} bytes`);
+          if (blob.size > 2000000 && qual > 0.3) { // If still > 2MB, try lower quality
+            tryCompress(qual - 0.1);
+          } else {
+            resolve(blob);
+          }
+        }, 'image/jpeg', qual);
       };
       
-      img.src = URL.createObjectURL(file);
-    });
-  };
+      tryCompress(quality);
+    };
+    
+    img.src = URL.createObjectURL(file);
+  });
+};
 
   // Parse Azure Document Intelligence response
   const parseAzureResponse = (azureResponse) => {
