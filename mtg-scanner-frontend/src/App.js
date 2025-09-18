@@ -1,22 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, Eye, AlertCircle, Edit3, Check, X, Plus, Trash2 } from 'lucide-react';
+import { Camera, Upload, AlertCircle, Edit3, Check, Plus, Trash2 } from 'lucide-react';
 import { getCardName } from './cardDatabase.js';
 
-// Edge of Eternities set number mappings
-const SET_RANGES = {
-  white: { min: 3, max: 45, color: 'white' },
-  blue: { min: 46, max: 86, color: 'blue' },
-  black: { min: 87, max: 128, color: 'black' },
-  red: { min: 129, max: 170, color: 'red' },
-  green: { min: 171, max: 211, color: 'green' },
-  colorless: { min: 1, max: 2, color: 'colorless' },
-  multi: { min: 212, max: 233, color: 'multi' },
-  artifact: { min: 234, max: 249, color: 'artifact' },
-  nonbasic: { min: 250, max: 261, color: 'nonbasic' },
-  stellar_sights_1: { min: 1, max: 31, color: 'special' },
-  stellar_sights_2: { min: 32, max: 45, color: 'special' },
-  basic_lands: { min: 1, max: 5, color: 'basic' }
-};
+
 
 function MTGDecklistApp() {
   const [image, setImage] = useState(null);
@@ -241,23 +227,6 @@ function MTGDecklistApp() {
     });
   };
 
-  const getSectionColor = (section) => {
-    const colors = {
-      white: 'text-yellow-600',
-      blue: 'text-blue-600',
-      black: 'text-gray-800',
-      red: 'text-red-600',
-      green: 'text-green-600',
-      colorless: 'text-gray-500',
-      multi: 'text-purple-600',
-      artifact: 'text-amber-600',
-      nonbasic: 'text-stone-600',
-      stellar_sights_1: 'text-indigo-600',
-      stellar_sights_2: 'text-indigo-600',
-      basic_lands: 'text-green-500'
-    };
-    return colors[section] || 'text-gray-600';
-  };
 
   const getCardNameColor = (section) => {
     const colors = {
