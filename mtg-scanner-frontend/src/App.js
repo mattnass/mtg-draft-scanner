@@ -163,14 +163,16 @@ function MTGDecklistApp() {
     setDebugInfo(null);
     
     try {
-      // Try without compression first for files under 1MB
       let fileToSend = file;
-      if (file.size > 1000000) { // Only compress if over 1MB
-        console.log('Compressing image...');
+      const fileSizeKB = Math.round(file.size / 1024);
+      
+      // Only compress if over 3MB (3072KB) to preserve quality for OCR
+      if (file.size > 3145728) { // 3MB in bytes
+        console.log(`File is ${fileSizeKB}KB, compressing...`);
         fileToSend = await compressImage(file);
-        console.log(`After compression: ${fileToSend.size} bytes (${Math.round(fileToSend.size/1024)}KB)`);
+        console.log(`After compression: ${Math.round(fileToSend.size/1024)}KB`);
       } else {
-        console.log('File small enough, sending original');
+        console.log(`File is ${fileSizeKB}KB, sending original (under 3MB)`);
       }
       
       const azureResponse = await analyzeImage(fileToSend);
