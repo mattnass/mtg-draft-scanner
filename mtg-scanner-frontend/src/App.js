@@ -143,47 +143,43 @@ const compressImage = async (file, maxWidth = 800, quality = 0.6) => {
   };
 
   const handleImageUpload = async (file) => {
-    if (!file) return;
+  if (!file) return;
+  
+  console.log(`Original file: ${file.name}, size: ${file.size} bytes (${Math.round(file.size/1024)}KB)`);
+  
+  // Check if file is too large before compression
+  if (file.size > 10000000) { // 10MB
+    setError('Image is too large. Please use a smaller image.');
+    return;
+  }
+  
+  setImage(URL.createObjectURL(file));
+  setIsAnalyzing(true);
+  setError(null);
+  setResults(null);
+  setDebugInfo(null);
+  
+  try {
+    // Compress the image
+    const compressedFile = await compressImage(file);
+    console.log(`Compressed file size: ${compressedFile.size} bytes (${Math.round(compressedFile.size/1024)}KB)`);
     
-    setImage(URL.createObjectURL(file));
-    setIsAnalyzing(true);
-    setError(null);
-    setResults(null);
-    setDebugInfo(null);
-    
-    try {
-      // Compress the image before sending to API
-      console.log(`Original file size: ${file.size} bytes`);
-      const compressedFile = await compressImage(file);
-      
-      const azureResponse = await analyzeImage(compressedFile);
-      setDebugInfo({
-        totalFields: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).length,
-        fieldNames: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).slice(0, 10),
-        originalSize: file.size,
-        compressedSize: compressedFile.size
-      });
-      
-      const parsedCards = parseAzureResponse(azureResponse);
-      
-      // Calculate totals
-      const totalCards = parsedCards.reduce((sum, card) => sum + card.total, 0);
-      const totalMainboard = parsedCards.reduce((sum, card) => sum + card.played, 0);
-      const totalSideboard = parsedCards.reduce((sum, card) => sum + card.sideboard, 0);
-      
-      setResults({
-        cards: parsedCards,
-        totalCards,
-        totalMainboard,
-        totalSideboard
-      });
-    } catch (err) {
-      console.error('Analysis error:', err);
-      setError(`Failed to analyze image: ${err.message}`);
-    } finally {
+    // Additional check - if still too large, reject
+    if (compressedFile.size > 3000000) { // 3MB
+      setError(`Image still too large after compression: ${Math.round(compressedFile.size/1024)}KB. Try a different image.`);
       setIsAnalyzing(false);
+      return;
     }
-  };
+    
+    const azureResponse = await analyzeImage(compressedFile);
+    // ... rest of your existing code
+  } catch (err) {
+    console.error('Analysis error:', err);
+    setError(`Failed to analyze image: ${err.message}`);
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
 
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
