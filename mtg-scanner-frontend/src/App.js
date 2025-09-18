@@ -77,6 +77,7 @@ function MTGDecklistApp() {
         
         // Apply OCR corrections for quantities - ensure it's a string first
         let quantity = String(fieldData.valueString || '');
+        console.log(`RAW quantity for ${fieldName}: "${quantity}" (type: ${typeof fieldData.valueString})`);
         quantity = quantity.replace(/[li|I]/g, '1');
         quantity = quantity.replace(/[Oo]/g, '0');
         quantity = quantity.replace(/[Ss]/g, '5');
@@ -88,7 +89,7 @@ function MTGDecklistApp() {
         
         // Use card database for name
         const cardName = getCardName(section, parseInt(setNumber));
-        
+        console.log(`After corrections: "${quantity}"`);
         console.log(`Found card: ${cardKey} = ${cardName} (${type}: ${quantity})`);
         
         // Group by card, tracking both total and played quantities
