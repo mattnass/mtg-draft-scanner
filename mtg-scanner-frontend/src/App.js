@@ -14,6 +14,32 @@ function MTGDecklistApp() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
+  // Image compression function to handle mobile photos
+  const compressImage = async (file, maxWidth = 1200, quality = 0.8) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions to stay under Azure's size limits
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Convert to blob with compression
+        canvas.toBlob((blob) => {
+          console.log(`Compressed image: ${file.size} bytes -> ${blob.size} bytes`);
+          resolve(blob);
+        }, 'image/jpeg', quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   // Parse Azure Document Intelligence response
   const parseAzureResponse = (azureResponse) => {
     console.log('Parsing Azure response:', azureResponse);
@@ -115,10 +141,16 @@ function MTGDecklistApp() {
     setDebugInfo(null);
     
     try {
-      const azureResponse = await analyzeImage(file);
+      // Compress the image before sending to API
+      console.log(`Original file size: ${file.size} bytes`);
+      const compressedFile = await compressImage(file);
+      
+      const azureResponse = await analyzeImage(compressedFile);
       setDebugInfo({
         totalFields: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).length,
-        fieldNames: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).slice(0, 10)
+        fieldNames: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).slice(0, 10),
+        originalSize: file.size,
+        compressedSize: compressedFile.size
       });
       
       const parsedCards = parseAzureResponse(azureResponse);
@@ -330,6 +362,9 @@ function MTGDecklistApp() {
               <div className="font-medium text-blue-800">Debug Info:</div>
               <div>Total fields found: {debugInfo.totalFields}</div>
               <div>Sample field names: {debugInfo.fieldNames.join(', ')}</div>
+              {debugInfo.originalSize && (
+                <div>Image compressed: {Math.round(debugInfo.originalSize / 1024)}KB → {Math.round(debugInfo.compressedSize / 1024)}KB</div>
+              )}
             </div>
           )}
 
