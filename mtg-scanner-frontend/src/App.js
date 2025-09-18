@@ -80,6 +80,9 @@ function MTGDecklistApp() {
         quantity = quantity.replace(/[li|I]/g, '1');
         quantity = quantity.replace(/[Oo]/g, '0');
         quantity = quantity.replace(/[Ss]/g, '5');
+        quantity = quantity.replace(/22/g, '2');      // 22 -> 2
+        quantity = quantity.replace(/33/g, '3');      // 33 -> 3
+        quantity = quantity.replace(/44/g, '4');      // 44 -> 4
         
         const cardKey = `${section}_${setNumber}`;
         
