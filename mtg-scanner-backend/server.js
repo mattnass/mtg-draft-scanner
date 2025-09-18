@@ -11,7 +11,10 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Enable CORS for your frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000'
+  origin: [
+    'http://localhost:3000',
+    'https://mtg-draft-scanner-production-d6c0.up.railway.app'
+  ]
 }));
 
 app.use(express.json());
