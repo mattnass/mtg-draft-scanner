@@ -464,15 +464,6 @@ function MTGDecklistApp() {
     setCards(newCards);
   };
 
-  // Reset all
-  const resetAll = () => {
-    const resetCards = cards.map(card => ({ ...card, played: 0 }));
-    setCards(resetCards);
-    setImage(null);
-    setError(null);
-    setDebugInfo(null);
-  };
-
   // Get card color
   const getCardColor = (section) => {
     const colors = {
@@ -495,23 +486,6 @@ function MTGDecklistApp() {
 
   // Calculate total
   const totalMaindeck = cards.reduce((sum, card) => sum + card.played, 0);
-
-  // Group cards by section
-  const sections = [
-    { name: 'COLORLESS', key: 'colorless' },
-    { name: 'WHITE', key: 'white' },
-    { name: 'BLUE', key: 'blue' },
-    { name: 'BLACK', key: 'black' },
-    { name: 'RED', key: 'red' },
-    { name: 'GREEN', key: 'green' },
-    { name: 'MULTICOLOR', key: 'multi' },
-    { name: 'ARTIFACTS', key: 'artifact' },
-    { name: 'NONBASIC LANDS', key: 'nonbasic' },
-    { name: 'STELLAR SIGHTS 1', key: 'stellar_sights_1' },
-    { name: 'STELLAR SIGHTS 2', key: 'stellar_sights_2' },
-    { name: 'SPECIAL GUESTS', key: 'special_guests' },
-    { name: 'BASIC LANDS', key: 'basic_lands' }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
