@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, AlertCircle } from 'lucide-react';
 
 // Complete card database
@@ -358,14 +358,15 @@ function MTGDecklistApp() {
   const [debugInfo, setDebugInfo] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Initialize cards on first load
-  React.useEffect(() => {
-    const initCards = [];
+  // Initialize cards
+  useEffect(() => {
     const sections = [
       'colorless', 'white', 'blue', 'black', 'red', 'green', 'multi', 
       'artifact', 'nonbasic', 'stellar_sights_1', 'stellar_sights_2', 
       'special_guests', 'basic_lands'
     ];
+    
+    const initCards = [];
     
     sections.forEach(section => {
       Object.entries(EDGE_OF_ETERNITIES_CARDS)
@@ -381,8 +382,15 @@ function MTGDecklistApp() {
         });
     });
     
-    // Sort alphabetically by name
-    initCards.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort by section, then alphabetically within section
+    initCards.sort((a, b) => {
+      const sectionA = sections.indexOf(a.section);
+      const sectionB = sections.indexOf(b.section);
+      if (sectionA !== sectionB) {
+        return sectionA - sectionB;
+      }
+      return a.name.localeCompare(b.name);
+    });
     
     setCards(initCards);
   }, []);
@@ -390,74 +398,69 @@ function MTGDecklistApp() {
   // Handle file upload
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImage(URL.createObjectURL(file));
-      setIsAnalyzing(true);
-      setError(null);
-      setDebugInfo(null);
+    if (!file) return;
 
-      // Call API
-      const formData = new FormData();
-      formData.append('image', file);
+    setImage(URL.createObjectURL(file));
+    setIsAnalyzing(true);
+    setError(null);
+    setDebugInfo(null);
 
-      fetch('https://mtg-draft-scanner-production.up.railway.app/api/analyze-decklist', {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(result => {
-        setDebugInfo({
-          totalFields: Object.keys(result.analyzeResult?.documents?.[0]?.fields || {}).length
-        });
+    const formData = new FormData();
+    formData.append('image', file);
 
-        // Parse results
-        const fields = result.analyzeResult?.documents?.[0]?.fields || {};
-        const updatedCards = [...cards];
-
-        Object.entries(fields).forEach(([fieldName, fieldData]) => {
-          const match = fieldName.match(/^(\w+)_played_(\d+)$/);
-          if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
-            const [, section, setNumber] = match;
-            
-            let quantity = String(fieldData.valueString || '');
-            quantity = quantity.replace(/[li|I]/g, '1');
-            quantity = quantity.replace(/[Oo]/g, '0');
-            quantity = quantity.replace(/[Ss]/g, '5');
-            
-            const cardIndex = updatedCards.findIndex(card => 
-              card.section === section && card.setNumber === parseInt(setNumber)
-            );
-            
-            if (cardIndex !== -1) {
-              updatedCards[cardIndex].played = parseInt(quantity) || 0;
-            }
-          }
-        });
-
-        setCards(updatedCards);
-      })
-      .catch(err => {
-        setError(`Failed to analyze image: ${err.message}`);
-      })
-      .finally(() => {
-        setIsAnalyzing(false);
+    fetch('https://mtg-draft-scanner-production.up.railway.app/api/analyze-decklist', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      return response.json();
+    })
+    .then(result => {
+      setDebugInfo({
+        totalFields: Object.keys(result.analyzeResult?.documents?.[0]?.fields || {}).length
       });
-    }
+
+      const fields = result.analyzeResult?.documents?.[0]?.fields || {};
+      const updatedCards = [...cards];
+
+      Object.entries(fields).forEach(([fieldName, fieldData]) => {
+        const match = fieldName.match(/^(\w+)_played_(\d+)$/);
+        if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
+          const [, section, setNumber] = match;
+          
+          let quantity = String(fieldData.valueString || '');
+          quantity = quantity.replace(/[li|I]/g, '1');
+          quantity = quantity.replace(/[Oo]/g, '0');
+          quantity = quantity.replace(/[Ss]/g, '5');
+          
+          const cardIndex = updatedCards.findIndex(card => 
+            card.section === section && card.setNumber === parseInt(setNumber)
+          );
+          
+          if (cardIndex !== -1) {
+            updatedCards[cardIndex].played = parseInt(quantity) || 0;
+          }
+        }
+      });
+
+      setCards(updatedCards);
+    })
+    .catch(err => {
+      setError(`Failed to analyze image: ${err.message}`);
+    })
+    .finally(() => {
+      setIsAnalyzing(false);
+    });
   };
 
-  // Update card quantity
+  // Update functions
   const updateCardQuantity = (index, value) => {
     const newCards = [...cards];
     newCards[index].played = Math.max(0, parseInt(value) || 0);
     setCards(newCards);
   };
 
-  // Update card name
   const updateCardName = (index, value) => {
     const newCards = [...cards];
     newCards[index].name = value;
@@ -484,8 +487,23 @@ function MTGDecklistApp() {
     return colors[section] || 'text-gray-700';
   };
 
-  // Calculate total
   const totalMaindeck = cards.reduce((sum, card) => sum + card.played, 0);
+
+  const sections = [
+    { name: 'COLORLESS', key: 'colorless' },
+    { name: 'WHITE', key: 'white' },
+    { name: 'BLUE', key: 'blue' },
+    { name: 'BLACK', key: 'black' },
+    { name: 'RED', key: 'red' },
+    { name: 'GREEN', key: 'green' },
+    { name: 'MULTICOLOR', key: 'multi' },
+    { name: 'ARTIFACTS', key: 'artifact' },
+    { name: 'NONBASIC LANDS', key: 'nonbasic' },
+    { name: 'STELLAR SIGHTS 1', key: 'stellar_sights_1' },
+    { name: 'STELLAR SIGHTS 2', key: 'stellar_sights_2' },
+    { name: 'SPECIAL GUESTS', key: 'special_guests' },
+    { name: 'BASIC LANDS', key: 'basic_lands' }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -558,36 +576,45 @@ function MTGDecklistApp() {
         <div className="bg-white rounded-lg shadow">
           <div className="overflow-auto" style={{ height: 'calc(100vh - 140px)' }}>
             <div className="p-2">
-              {/* All cards in alphabetical order, 4 columns */}
-              <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
-                {cards.map((card, index) => (
-                  <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
-                    {/* Count input */}
-                    <input
-                      type="number"
-                      min="0"
-                      max="99"
-                      value={card.played}
-                      onChange={(e) => updateCardQuantity(index, e.target.value)}
-                      className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                    />
+              {sections.map(section => {
+                const sectionCards = cards.filter(card => card.section === section.key);
+                if (sectionCards.length === 0) return null;
+
+                return (
+                  <div key={section.key} className="mb-4">
+                    {/* Section Header */}
+                    <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">
+                      {section.name}
+                    </div>
                     
-                    {/* Card name */}
-                    <input
-                      type="text"
-                      value={card.name}
-                      onChange={(e) => updateCardName(index, e.target.value)}
-                      className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
-                      style={{ minWidth: '100px' }}
-                    />
+                    {/* Cards Grid - Simple 4 columns */}
+                    <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
+                      {sectionCards.map((card) => {
+                        const globalIndex = cards.findIndex(c => c === card);
+                        return (
+                          <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
+                            <input
+                              type="number"
+                              min="0"
+                              max="99"
+                              value={card.played}
+                              onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                              className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              value={card.name}
+                              onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                              className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
+                              style={{ minWidth: '100px' }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                ))}
-                
-                {/* Fill empty cells to complete the grid */}
-                {cards.length % 4 !== 0 && Array.from({ length: 4 - (cards.length % 4) }).map((_, i) => (
-                  <div key={`empty-${i}`} className="text-xs py-0.5"></div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
