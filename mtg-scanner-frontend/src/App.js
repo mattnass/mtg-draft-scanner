@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Copy, Check } from 'lucide-react';
 
 // Complete card database
 const EDGE_OF_ETERNITIES_CARDS = {
@@ -356,6 +356,7 @@ function MTGDecklistApp() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
+  const [copied, setCopied] = useState(false);
   const fileInputRef = useRef(null);
 
   // Initialize cards
@@ -467,8 +468,23 @@ function MTGDecklistApp() {
     setCards(newCards);
   };
 
-
   const totalMaindeck = cards.reduce((sum, card) => sum + card.played, 0);
+
+  // Copy deck list to clipboard
+  const copyDeckList = async () => {
+    const deckList = cards
+      .filter(card => card.played > 0)
+      .map(card => `${card.played} ${card.name}`)
+      .join('\n');
+    
+    try {
+      await navigator.clipboard.writeText(deckList);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -537,9 +553,377 @@ function MTGDecklistApp() {
           </div>
         </div>
 
-        {/* Simple text list of played cards */}
-        <div className="bg-white rounded-lg shadow mt-4 p-4">
-          <div className="text-sm font-medium text-gray-800 mb-2">Deck List ({totalMaindeck} cards)</div>
+        {/* Card List */}
+        <div className="bg-white rounded-lg shadow mb-4">
+          <div className="p-2">
+            {/* Top Row - 4 sections side by side */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {/* White */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">WHITE</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'white').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-yellow-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Blue */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BLUE</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'blue').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-blue-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Black */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BLACK</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'black').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-gray-900 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Red */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">RED</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'red').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-red-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Row - 4 sections side by side */}
+            <div className="grid grid-cols-4 gap-4">
+              {/* Green + Colorless */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">GREEN</div>
+                <div className="space-y-0.5 mb-4">
+                  {cards.filter(card => card.section === 'green').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-green-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">COLORLESS</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'colorless').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-gray-600 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Multi + Artifacts */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">MULTICOLOR</div>
+                <div className="space-y-0.5 mb-4">
+                  {cards.filter(card => card.section === 'multi').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-purple-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">ARTIFACTS</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'artifact').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-amber-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Nonbasic + Stellar 1 */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">NONBASIC LANDS</div>
+                <div className="space-y-0.5 mb-4">
+                  {cards.filter(card => card.section === 'nonbasic').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-stone-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">STELLAR SIGHTS 1</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'stellar_sights_1').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-indigo-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Stellar 2 + Special Guests + Basics */}
+              <div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">STELLAR SIGHTS 2</div>
+                <div className="space-y-0.5 mb-4">
+                  {cards.filter(card => card.section === 'stellar_sights_2').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-indigo-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">SPECIAL GUESTS</div>
+                <div className="space-y-0.5 mb-4">
+                  {cards.filter(card => card.section === 'special_guests').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-pink-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BASIC LANDS</div>
+                <div className="space-y-0.5">
+                  {cards.filter(card => card.section === 'basic_lands').map((card) => {
+                    const globalIndex = cards.findIndex(c => c === card);
+                    return (
+                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          value={card.played}
+                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={card.name}
+                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                          className="flex-1 border-none bg-transparent font-medium text-green-600 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Deck List - completely separate at bottom */}
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow p-4 border-2 border-gray-200">
+          <div className="flex items-center justify-between mb-3 pb-2 border-b border-gray-200">
+            <div className="text-sm font-medium text-gray-800">
+              Deck List ({totalMaindeck} cards)
+            </div>
+            <button
+              onClick={copyDeckList}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
           <div className="text-xs text-gray-700 space-y-0.5">
             {cards
               .filter(card => card.played > 0)
@@ -548,363 +932,9 @@ function MTGDecklistApp() {
                   {card.played} {card.name}
                 </div>
               ))}
-          </div>
-        </div>
-
-        {/* Card List */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="overflow-auto" style={{ height: 'calc(100vh - 140px)' }}>
-            <div className="p-2">
-              {/* Top Row - 4 sections side by side */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
-                {/* White */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">WHITE</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'white').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-yellow-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Blue */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BLUE</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'blue').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-blue-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Black */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BLACK</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'black').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-gray-900 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Red */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">RED</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'red').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-red-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Row - 4 sections side by side */}
-              <div className="grid grid-cols-4 gap-4">
-                {/* Green + Colorless */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">GREEN</div>
-                  <div className="space-y-0.5 mb-4">
-                    {cards.filter(card => card.section === 'green').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-green-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">COLORLESS</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'colorless').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-gray-600 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Multi + Artifacts */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">MULTICOLOR</div>
-                  <div className="space-y-0.5 mb-4">
-                    {cards.filter(card => card.section === 'multi').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-purple-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">ARTIFACTS</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'artifact').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-amber-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Nonbasic + Stellar 1 */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">NONBASIC LANDS</div>
-                  <div className="space-y-0.5 mb-4">
-                    {cards.filter(card => card.section === 'nonbasic').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-stone-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">STELLAR SIGHTS 1</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'stellar_sights_1').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-indigo-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Stellar 2 + Special Guests + Basics */}
-                <div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">STELLAR SIGHTS 2</div>
-                  <div className="space-y-0.5 mb-4">
-                    {cards.filter(card => card.section === 'stellar_sights_2').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-indigo-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">SPECIAL GUESTS</div>
-                  <div className="space-y-0.5 mb-4">
-                    {cards.filter(card => card.section === 'special_guests').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-pink-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BASIC LANDS</div>
-                  <div className="space-y-0.5">
-                    {cards.filter(card => card.section === 'basic_lands').map((card) => {
-                      const globalIndex = cards.findIndex(c => c === card);
-                      return (
-                        <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="number"
-                            min="0"
-                            max="99"
-                            value={card.played}
-                            onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                            className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            value={card.name}
-                            onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                            className="flex-1 border-none bg-transparent font-medium text-green-600 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {cards.filter(card => card.played > 0).length === 0 && (
+              <div className="text-gray-400 italic">No cards in deck yet</div>
+            )}
           </div>
         </div>
       </div>
