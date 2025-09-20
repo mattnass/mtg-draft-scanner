@@ -351,205 +351,135 @@ const EDGE_OF_ETERNITIES_CARDS = {
 };
 
 function MTGDecklistApp() {
+  const [cards, setCards] = useState([]);
   const [image, setImage] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState(null);
   const [debugInfo, setDebugInfo] = useState(null);
   const fileInputRef = useRef(null);
 
-  // Initialize all cards with 0 played count
-  const initializeCards = () => {
+  // Initialize cards on first load
+  React.useEffect(() => {
+    const initCards = [];
     const sections = [
       'colorless', 'white', 'blue', 'black', 'red', 'green', 'multi', 
       'artifact', 'nonbasic', 'stellar_sights_1', 'stellar_sights_2', 
       'special_guests', 'basic_lands'
     ];
     
-    const allCards = [];
     sections.forEach(section => {
-      const sectionCards = Object.entries(EDGE_OF_ETERNITIES_CARDS)
+      Object.entries(EDGE_OF_ETERNITIES_CARDS)
         .filter(([key]) => key.startsWith(`${section}_`))
-        .map(([key, name]) => {
+        .forEach(([key, name]) => {
           const setNumber = parseInt(key.split('_').pop());
-          return {
+          initCards.push({
             section,
             setNumber,
             name,
             played: 0
-          };
-        })
-        .sort((a, b) => a.setNumber - b.setNumber);
-      
-      allCards.push(...sectionCards);
+          });
+        });
     });
     
-    return allCards;
-  };
-
-  const [cards, setCards] = useState(initializeCards());
-
-  // Image compression function
-  const compressImage = async (file, maxSizeMB = 3.8) => {
-    return new Promise((resolve) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      
-      img.onload = () => {
-        let { width, height } = img;
-        const maxDimension = 2000;
-        
-        if (width > maxDimension || height > maxDimension) {
-          const ratio = Math.min(maxDimension / width, maxDimension / height);
-          width *= ratio;
-          height *= ratio;
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        const targetSize = maxSizeMB * 1024 * 1024;
-        let quality = 0.9;
-        
-        const tryCompress = (qual) => {
-          canvas.toBlob((blob) => {
-            if (blob.size > targetSize && qual > 0.6) {
-              tryCompress(qual - 0.1);
-            } else {
-              resolve(blob);
-            }
-          }, 'image/jpeg', qual);
-        };
-        
-        tryCompress(quality);
-      };
-      
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
-  // Parse Azure Document Intelligence response
-  const parseAzureResponse = (azureResponse) => {
-    const updatedCards = [...cards];
-    const fields = azureResponse.analyzeResult?.documents?.[0]?.fields || {};
-    
-    Object.entries(fields).forEach(([fieldName, fieldData]) => {
-      const match = fieldName.match(/^(\w+)_(total|played)_(\d+)$/);
-      if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
-        const [, section, type, setNumber] = match;
-        
-        // Only process 'played' fields for mainboard count
-        if (type === 'played') {
-          let quantity = String(fieldData.valueString || '');
-          quantity = quantity.replace(/[li|I]/g, '1');
-          quantity = quantity.replace(/[Oo]/g, '0');
-          quantity = quantity.replace(/[Ss]/g, '5');
-          quantity = quantity.replace(/22/g, '2');
-          quantity = quantity.replace(/33/g, '3');
-          quantity = quantity.replace(/44/g, '4');
-          
-          const cardIndex = updatedCards.findIndex(card => 
-            card.section === section && card.setNumber === parseInt(setNumber)
-          );
-          
-          if (cardIndex !== -1) {
-            updatedCards[cardIndex].played = parseInt(quantity) || 0;
-          }
-        }
+    // Sort by section order and set number
+    initCards.sort((a, b) => {
+      if (a.section !== b.section) {
+        return sections.indexOf(a.section) - sections.indexOf(b.section);
       }
+      return a.setNumber - b.setNumber;
     });
     
-    return updatedCards;
-  };
+    setCards(initCards);
+  }, []);
 
-  // Real Azure API call
-  const analyzeImage = async (imageFile) => {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-
-    try {
-      const response = await fetch('https://mtg-draft-scanner-production.up.railway.app/api/analyze-decklist', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server error: ${response.status}`);
-      }
-
-      const result = await response.json();
-      return result;
-    } catch (error) {
-      console.error('API call failed:', error);
-      throw error;
-    }
-  };
-
-  const handleImageUpload = async (file) => {
-    if (!file) return;
-    
-    setImage(URL.createObjectURL(file));
-    setIsAnalyzing(true);
-    setError(null);
-    setDebugInfo(null);
-    
-    try {
-      let fileToSend = file;
-      
-      if (file.size > 3145728) { // 3MB in bytes
-        fileToSend = await compressImage(file);
-      }
-      
-      const azureResponse = await analyzeImage(fileToSend);
-      setDebugInfo({
-        totalFields: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).length,
-        originalSize: file.size,
-        compressedSize: fileToSend.size
-      });
-      
-      const updatedCards = parseAzureResponse(azureResponse);
-      setCards(updatedCards);
-    } catch (err) {
-      console.error('Analysis error:', err);
-      setError(`Failed to analyze image: ${err.message}`);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
+  // Handle file upload
   const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (file) handleImageUpload(file);
+    if (file) {
+      setImage(URL.createObjectURL(file));
+      setIsAnalyzing(true);
+      setError(null);
+      setDebugInfo(null);
+
+      // Call API
+      const formData = new FormData();
+      formData.append('image', file);
+
+      fetch('https://mtg-draft-scanner-production.up.railway.app/api/analyze-decklist', {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(result => {
+        setDebugInfo({
+          totalFields: Object.keys(result.analyzeResult?.documents?.[0]?.fields || {}).length
+        });
+
+        // Parse results
+        const fields = result.analyzeResult?.documents?.[0]?.fields || {};
+        const updatedCards = [...cards];
+
+        Object.entries(fields).forEach(([fieldName, fieldData]) => {
+          const match = fieldName.match(/^(\w+)_played_(\d+)$/);
+          if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
+            const [, section, setNumber] = match;
+            
+            let quantity = String(fieldData.valueString || '');
+            quantity = quantity.replace(/[li|I]/g, '1');
+            quantity = quantity.replace(/[Oo]/g, '0');
+            quantity = quantity.replace(/[Ss]/g, '5');
+            
+            const cardIndex = updatedCards.findIndex(card => 
+              card.section === section && card.setNumber === parseInt(setNumber)
+            );
+            
+            if (cardIndex !== -1) {
+              updatedCards[cardIndex].played = parseInt(quantity) || 0;
+            }
+          }
+        });
+
+        setCards(updatedCards);
+      })
+      .catch(err => {
+        setError(`Failed to analyze image: ${err.message}`);
+      })
+      .finally(() => {
+        setIsAnalyzing(false);
+      });
+    }
   };
 
-  // Reset all cards to 0
-  const resetAllCards = () => {
-    const resetCards = cards.map(card => ({
-      ...card,
-      played: 0
-    }));
-    setCards(resetCards);
-  };
-
-  // Update card quantities
-  const updateCard = (cardIndex, value) => {
-    const updatedCards = [...cards];
-    const numValue = Math.max(0, parseInt(value) || 0);
-    updatedCards[cardIndex].played = numValue;
-    setCards(updatedCards);
+  // Update card quantity
+  const updateCardQuantity = (index, value) => {
+    const newCards = [...cards];
+    newCards[index].played = Math.max(0, parseInt(value) || 0);
+    setCards(newCards);
   };
 
   // Update card name
-  const updateCardName = (cardIndex, newName) => {
-    const updatedCards = [...cards];
-    updatedCards[cardIndex].name = newName;
-    setCards(updatedCards);
+  const updateCardName = (index, value) => {
+    const newCards = [...cards];
+    newCards[index].name = value;
+    setCards(newCards);
+  };
+
+  // Reset all
+  const resetAll = () => {
+    const resetCards = cards.map(card => ({ ...card, played: 0 }));
+    setCards(resetCards);
+    setImage(null);
+    setError(null);
+    setDebugInfo(null);
   };
 
   // Get card color
-  const getCardNameColor = (section) => {
+  const getCardColor = (section) => {
     const colors = {
       white: 'text-yellow-700',
       blue: 'text-blue-700',
@@ -568,13 +498,30 @@ function MTGDecklistApp() {
     return colors[section] || 'text-gray-700';
   };
 
-  // Calculate mainboard total
+  // Calculate total
   const totalMainboard = cards.reduce((sum, card) => sum + card.played, 0);
+
+  // Group cards by section
+  const sections = [
+    { name: 'COLORLESS', key: 'colorless' },
+    { name: 'WHITE', key: 'white' },
+    { name: 'BLUE', key: 'blue' },
+    { name: 'BLACK', key: 'black' },
+    { name: 'RED', key: 'red' },
+    { name: 'GREEN', key: 'green' },
+    { name: 'MULTICOLOR', key: 'multi' },
+    { name: 'ARTIFACTS', key: 'artifact' },
+    { name: 'NONBASIC LANDS', key: 'nonbasic' },
+    { name: 'STELLAR SIGHTS 1', key: 'stellar_sights_1' },
+    { name: 'STELLAR SIGHTS 2', key: 'stellar_sights_2' },
+    { name: 'SPECIAL GUESTS', key: 'special_guests' },
+    { name: 'BASIC LANDS', key: 'basic_lands' }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header with scan and mainboard */}
+        {/* Header */}
         <div className="grid grid-cols-12 gap-4 mb-4">
           {/* Scan Section */}
           <div className="col-span-6 bg-white rounded-lg shadow p-4">
@@ -582,7 +529,7 @@ function MTGDecklistApp() {
               {!image ? (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="bg-blue-600 text-white py-2 px-4 rounded text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 text-white py-2 px-4 rounded text-sm flex items-center gap-2 hover:bg-blue-700"
                 >
                   <Upload size={16} />
                   Scan Decklist
@@ -590,15 +537,7 @@ function MTGDecklistApp() {
               ) : (
                 <div className="flex items-center gap-2">
                   <img src={image} alt="Preview" className="w-12 h-12 object-contain rounded border" />
-                  <button
-                    onClick={() => {
-                      setImage(null);
-                      setError(null);
-                      setDebugInfo(null);
-                      resetAllCards();
-                    }}
-                    className="text-xs text-gray-500 hover:text-gray-700"
-                  >
+                  <button onClick={resetAll} className="text-xs text-gray-500 hover:text-gray-700">
                     Change Image
                   </button>
                 </div>
@@ -612,7 +551,6 @@ function MTGDecklistApp() {
                 className="hidden"
               />
 
-              {/* Loading */}
               {isAnalyzing && (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
@@ -620,14 +558,12 @@ function MTGDecklistApp() {
                 </div>
               )}
 
-              {/* Debug Info */}
               {debugInfo && (
                 <div className="text-xs text-gray-600">
                   Found {debugInfo.totalFields} fields
                 </div>
               )}
 
-              {/* Error */}
               {error && (
                 <div className="flex items-center gap-1 text-red-700">
                   <AlertCircle size={14} />
@@ -655,25 +591,11 @@ function MTGDecklistApp() {
         <div className="bg-white rounded-lg shadow">
           <div className="overflow-auto" style={{ height: 'calc(100vh - 140px)' }}>
             <div className="p-2">
-              {/* Split cards into groups by section */}
-              {(() => {
-                const sections = [
-                  { name: 'COLORLESS', key: 'colorless', cards: cards.filter(c => c.section === 'colorless') },
-                  { name: 'WHITE', key: 'white', cards: cards.filter(c => c.section === 'white') },
-                  { name: 'BLUE', key: 'blue', cards: cards.filter(c => c.section === 'blue') },
-                  { name: 'BLACK', key: 'black', cards: cards.filter(c => c.section === 'black') },
-                  { name: 'RED', key: 'red', cards: cards.filter(c => c.section === 'red') },
-                  { name: 'GREEN', key: 'green', cards: cards.filter(c => c.section === 'green') },
-                  { name: 'MULTICOLOR', key: 'multi', cards: cards.filter(c => c.section === 'multi') },
-                  { name: 'ARTIFACTS', key: 'artifact', cards: cards.filter(c => c.section === 'artifact') },
-                  { name: 'NONBASIC LANDS', key: 'nonbasic', cards: cards.filter(c => c.section === 'nonbasic') },
-                  { name: 'STELLAR SIGHTS 1', key: 'stellar_sights_1', cards: cards.filter(c => c.section === 'stellar_sights_1') },
-                  { name: 'STELLAR SIGHTS 2', key: 'stellar_sights_2', cards: cards.filter(c => c.section === 'stellar_sights_2') },
-                  { name: 'SPECIAL GUESTS', key: 'special_guests', cards: cards.filter(c => c.section === 'special_guests') },
-                  { name: 'BASIC LANDS', key: 'basic_lands', cards: cards.filter(c => c.section === 'basic_lands') }
-                ];
+              {sections.map(section => {
+                const sectionCards = cards.filter(card => card.section === section.key);
+                if (sectionCards.length === 0) return null;
 
-                return sections.map(section => (
+                return (
                   <div key={section.key} className="mb-4">
                     {/* Section Header */}
                     <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">
@@ -682,7 +604,7 @@ function MTGDecklistApp() {
                     
                     {/* Cards Grid - 4 columns */}
                     <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
-                      {section.cards.map((card, cardIndex) => {
+                      {sectionCards.map((card, cardIndex) => {
                         const globalIndex = cards.findIndex(c => c === card);
                         return (
                           <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
@@ -692,34 +614,30 @@ function MTGDecklistApp() {
                               min="0"
                               max="99"
                               value={card.played}
-                              onChange={(e) => updateCard(globalIndex, e.target.value)}
-                              className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500 focus:border-transparent"
+                              onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                              className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
                             />
                             
-                            {/* Card name - editable */}
+                            {/* Card name */}
                             <input
                               type="text"
                               value={card.name}
                               onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                              className={`flex-1 border-none bg-transparent font-medium ${getCardNameColor(card.section)} focus:ring-1 focus:ring-blue-500 focus:border-transparent rounded px-1 py-0.5 text-xs leading-tight`}
+                              className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
                               style={{ minWidth: '100px' }}
                             />
                           </div>
                         );
                       })}
                       
-                      {/* Add empty cells to complete the row if needed */}
-                      {section.cards.length % 4 !== 0 && (
-                        <>
-                          {Array.from({ length: 4 - (section.cards.length % 4) }).map((_, i) => (
-                            <div key={`empty-${i}`} className="text-xs py-0.5"></div>
-                          ))}
-                        </>
-                      )}
+                      {/* Fill empty cells */}
+                      {sectionCards.length % 4 !== 0 && Array.from({ length: 4 - (sectionCards.length % 4) }).map((_, i) => (
+                        <div key={`empty-${i}`} className="text-xs py-0.5"></div>
+                      ))}
                     </div>
                   </div>
-                ));
-              })()}
+                );
+              })}
             </div>
           </div>
         </div>
