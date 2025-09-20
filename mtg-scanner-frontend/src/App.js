@@ -587,30 +587,47 @@ function MTGDecklistApp() {
                       {section.name}
                     </div>
                     
-                    {/* Cards Grid - Simple 4 columns */}
-                    <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
-                      {sectionCards.map((card) => {
-                        const globalIndex = cards.findIndex(c => c === card);
-                        return (
-                          <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
-                            <input
-                              type="number"
-                              min="0"
-                              max="99"
-                              value={card.played}
-                              onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                              className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                            />
-                            <input
-                              type="text"
-                              value={card.name}
-                              onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                              className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
-                              style={{ minWidth: '100px' }}
-                            />
+                    {/* Cards Grid - 4 columns, top to bottom flow */}
+                    <div className="grid grid-cols-4 gap-x-3">
+                      {(() => {
+                        // Split cards into 4 vertical columns
+                        const numCols = 4;
+                        const itemsPerCol = Math.ceil(sectionCards.length / numCols);
+                        const columns = [];
+                        
+                        for (let col = 0; col < numCols; col++) {
+                          const startIndex = col * itemsPerCol;
+                          const endIndex = Math.min(startIndex + itemsPerCol, sectionCards.length);
+                          columns.push(sectionCards.slice(startIndex, endIndex));
+                        }
+
+                        return columns.map((column, colIndex) => (
+                          <div key={colIndex} className="space-y-0.5">
+                            {column.map((card) => {
+                              const globalIndex = cards.findIndex(c => c === card);
+                              return (
+                                <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="99"
+                                    value={card.played}
+                                    onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+                                    className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={card.name}
+                                    onChange={(e) => updateCardName(globalIndex, e.target.value)}
+                                    className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
+                                    style={{ minWidth: '100px' }}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
-                        );
-                      })}
+                        ));
+                      })()}
                     </div>
                   </div>
                 );
