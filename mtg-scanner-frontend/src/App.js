@@ -381,13 +381,8 @@ function MTGDecklistApp() {
         });
     });
     
-    // Sort by section order and set number
-    initCards.sort((a, b) => {
-      if (a.section !== b.section) {
-        return sections.indexOf(a.section) - sections.indexOf(b.section);
-      }
-      return a.setNumber - b.setNumber;
-    });
+    // Sort alphabetically by name
+    initCards.sort((a, b) => a.name.localeCompare(b.name));
     
     setCards(initCards);
   }, []);
@@ -499,7 +494,7 @@ function MTGDecklistApp() {
   };
 
   // Calculate total
-  const totalMainboard = cards.reduce((sum, card) => sum + card.played, 0);
+  const totalMaindeck = cards.reduce((sum, card) => sum + card.played, 0);
 
   // Group cards by section
   const sections = [
@@ -526,20 +521,18 @@ function MTGDecklistApp() {
           {/* Scan Section */}
           <div className="col-span-6 bg-white rounded-lg shadow p-4">
             <div className="flex items-center gap-4">
-              {!image ? (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-blue-600 text-white py-2 px-4 rounded text-sm flex items-center gap-2 hover:bg-blue-700"
-                >
-                  <Upload size={16} />
-                  Scan Decklist
-                </button>
-              ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-blue-600 text-white py-2 px-4 rounded text-sm flex items-center gap-2 hover:bg-blue-700"
+              >
+                <Upload size={16} />
+                Upload Decklist
+              </button>
+
+              {image && (
                 <div className="flex items-center gap-2">
                   <img src={image} alt="Preview" className="w-12 h-12 object-contain rounded border" />
-                  <button onClick={resetAll} className="text-xs text-gray-500 hover:text-gray-700">
-                    Change Image
-                  </button>
+                  <span className="text-xs text-gray-600">Uploaded</span>
                 </div>
               )}
               
@@ -573,12 +566,12 @@ function MTGDecklistApp() {
             </div>
           </div>
 
-          {/* Mainboard Count */}
+          {/* Maindeck Count */}
           <div className="col-span-6 bg-white rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-xs text-gray-500">Mainboard</div>
-                <div className="text-2xl font-bold text-blue-600">{totalMainboard}</div>
+                <div className="text-xs text-gray-500">Maindeck</div>
+                <div className="text-2xl font-bold text-blue-600">{totalMaindeck}</div>
               </div>
               <div className="text-xs text-gray-500">
                 MTG Draft Pool Scanner - Edge of Eternities
@@ -591,53 +584,36 @@ function MTGDecklistApp() {
         <div className="bg-white rounded-lg shadow">
           <div className="overflow-auto" style={{ height: 'calc(100vh - 140px)' }}>
             <div className="p-2">
-              {sections.map(section => {
-                const sectionCards = cards.filter(card => card.section === section.key);
-                if (sectionCards.length === 0) return null;
-
-                return (
-                  <div key={section.key} className="mb-4">
-                    {/* Section Header */}
-                    <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">
-                      {section.name}
-                    </div>
+              {/* All cards in alphabetical order, 4 columns */}
+              <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
+                {cards.map((card, index) => (
+                  <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
+                    {/* Count input */}
+                    <input
+                      type="number"
+                      min="0"
+                      max="99"
+                      value={card.played}
+                      onChange={(e) => updateCardQuantity(index, e.target.value)}
+                      className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
+                    />
                     
-                    {/* Cards Grid - 4 columns */}
-                    <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
-                      {sectionCards.map((card, cardIndex) => {
-                        const globalIndex = cards.findIndex(c => c === card);
-                        return (
-                          <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs py-0.5">
-                            {/* Count input */}
-                            <input
-                              type="number"
-                              min="0"
-                              max="99"
-                              value={card.played}
-                              onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                              className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                            />
-                            
-                            {/* Card name */}
-                            <input
-                              type="text"
-                              value={card.name}
-                              onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                              className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
-                              style={{ minWidth: '100px' }}
-                            />
-                          </div>
-                        );
-                      })}
-                      
-                      {/* Fill empty cells */}
-                      {sectionCards.length % 4 !== 0 && Array.from({ length: 4 - (sectionCards.length % 4) }).map((_, i) => (
-                        <div key={`empty-${i}`} className="text-xs py-0.5"></div>
-                      ))}
-                    </div>
+                    {/* Card name */}
+                    <input
+                      type="text"
+                      value={card.name}
+                      onChange={(e) => updateCardName(index, e.target.value)}
+                      className={`flex-1 border-none bg-transparent font-medium ${getCardColor(card.section)} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
+                      style={{ minWidth: '100px' }}
+                    />
                   </div>
-                );
-              })}
+                ))}
+                
+                {/* Fill empty cells to complete the grid */}
+                {cards.length % 4 !== 0 && Array.from({ length: 4 - (cards.length % 4) }).map((_, i) => (
+                  <div key={`empty-${i}`} className="text-xs py-0.5"></div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
