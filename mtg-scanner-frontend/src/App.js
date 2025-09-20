@@ -361,9 +361,9 @@ function MTGDecklistApp() {
   // Initialize cards
   useEffect(() => {
     const sections = [
-      'colorless', 'white', 'blue', 'black', 'red', 'green', 'multi', 
+      'white', 'blue', 'black', 'red', 'green', 'multi', 
       'artifact', 'nonbasic', 'stellar_sights_1', 'stellar_sights_2', 
-      'special_guests', 'basic_lands'
+      'special_guests', 'basic_lands', 'colorless'
     ];
     
     const initCards = [];
@@ -490,7 +490,6 @@ function MTGDecklistApp() {
   const totalMaindeck = cards.reduce((sum, card) => sum + card.played, 0);
 
   const sections = [
-    { name: 'COLORLESS', key: 'colorless' },
     { name: 'WHITE', key: 'white' },
     { name: 'BLUE', key: 'blue' },
     { name: 'BLACK', key: 'black' },
@@ -502,7 +501,8 @@ function MTGDecklistApp() {
     { name: 'STELLAR SIGHTS 1', key: 'stellar_sights_1' },
     { name: 'STELLAR SIGHTS 2', key: 'stellar_sights_2' },
     { name: 'SPECIAL GUESTS', key: 'special_guests' },
-    { name: 'BASIC LANDS', key: 'basic_lands' }
+    { name: 'BASIC LANDS', key: 'basic_lands' },
+    { name: 'COLORLESS', key: 'colorless' }
   ];
 
   return (
