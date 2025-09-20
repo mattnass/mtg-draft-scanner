@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { Upload, AlertCircle} from 'lucide-react';
 
 // Complete card database
 const EDGE_OF_ETERNITIES_CARDS = {
