@@ -467,7 +467,43 @@ function MTGDecklistApp() {
     setCards(newCards);
   };
 
+  // Get card color
+  const getCardColor = (section) => {
+    const colors = {
+      white: 'text-yellow-700',
+      blue: 'text-blue-700',
+      black: 'text-gray-900',
+      red: 'text-red-700', 
+      green: 'text-green-700',
+      colorless: 'text-gray-600',
+      multi: 'text-purple-700',
+      artifact: 'text-amber-700',
+      nonbasic: 'text-stone-700',
+      stellar_sights_1: 'text-indigo-700',
+      stellar_sights_2: 'text-indigo-700',
+      special_guests: 'text-pink-700',
+      basic_lands: 'text-green-600'
+    };
+    return colors[section] || 'text-gray-700';
+  };
+
   const totalMaindeck = cards.reduce((sum, card) => sum + card.played, 0);
+
+  const sections = [
+    { name: 'WHITE', key: 'white' },
+    { name: 'BLUE', key: 'blue' },
+    { name: 'BLACK', key: 'black' },
+    { name: 'RED', key: 'red' },
+    { name: 'GREEN', key: 'green' },
+    { name: 'MULTICOLOR', key: 'multi' },
+    { name: 'ARTIFACTS', key: 'artifact' },
+    { name: 'NONBASIC LANDS', key: 'nonbasic' },
+    { name: 'STELLAR SIGHTS 1', key: 'stellar_sights_1' },
+    { name: 'STELLAR SIGHTS 2', key: 'stellar_sights_2' },
+    { name: 'SPECIAL GUESTS', key: 'special_guests' },
+    { name: 'BASIC LANDS', key: 'basic_lands' },
+    { name: 'COLORLESS', key: 'colorless' }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -533,6 +569,20 @@ function MTGDecklistApp() {
                 MTG Draft Pool Scanner - Edge of Eternities
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Simple text list of played cards */}
+        <div className="bg-white rounded-lg shadow mt-4 p-4">
+          <div className="text-sm font-medium text-gray-800 mb-2">Deck List ({totalMaindeck} cards)</div>
+          <div className="text-xs text-gray-700 space-y-0.5">
+            {cards
+              .filter(card => card.played > 0)
+              .map(card => (
+                <div key={`${card.section}_${card.setNumber}`}>
+                  {card.played} {card.name}
+                </div>
+              ))}
           </div>
         </div>
 
