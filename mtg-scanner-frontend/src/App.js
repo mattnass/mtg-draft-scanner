@@ -434,6 +434,9 @@ function MTGDecklistApp() {
     const updatedCards = [...cards];
     const fields = azureResponse.analyzeResult?.documents?.[0]?.fields || {};
     
+    // First pass: collect all the data
+    const cardData = new Map();
+    
     Object.entries(fields).forEach(([fieldName, fieldData]) => {
       const match = fieldName.match(/^(\w+)_(total|played)_(\d+)$/);
       if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
@@ -447,15 +450,27 @@ function MTGDecklistApp() {
         quantity = quantity.replace(/33/g, '3');
         quantity = quantity.replace(/44/g, '4');
         
+        const cardKey = `${section}_${setNumber}`;
+        
+        if (!cardData.has(cardKey)) {
+          cardData.set(cardKey, { section, setNumber: parseInt(setNumber) });
+        }
+        
+        const card = cardData.get(cardKey);
+        card[type] = parseInt(quantity) || 0;
+      }
+    });
+    
+    // Second pass: update cards that have both total and played data
+    cardData.forEach((data, cardKey) => {
+      // Only process cards that have both total and played values
+      if (data.total !== undefined && data.played !== undefined) {
         const cardIndex = updatedCards.findIndex(card => 
-          card.section === section && card.setNumber === parseInt(setNumber)
+          card.section === data.section && card.setNumber === data.setNumber
         );
         
         if (cardIndex !== -1) {
-          const card = updatedCards[cardIndex];
-          if (type === 'played') {
-            card.played = parseInt(quantity) || 0;
-          }
+          updatedCards[cardIndex].played = data.played;
         }
       }
     });
