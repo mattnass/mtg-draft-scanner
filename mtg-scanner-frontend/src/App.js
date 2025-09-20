@@ -434,43 +434,28 @@ function MTGDecklistApp() {
     const updatedCards = [...cards];
     const fields = azureResponse.analyzeResult?.documents?.[0]?.fields || {};
     
-    // First pass: collect all the data
-    const cardData = new Map();
-    
     Object.entries(fields).forEach(([fieldName, fieldData]) => {
       const match = fieldName.match(/^(\w+)_(total|played)_(\d+)$/);
       if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
         const [, section, type, setNumber] = match;
         
-        let quantity = String(fieldData.valueString || '');
-        quantity = quantity.replace(/[li|I]/g, '1');
-        quantity = quantity.replace(/[Oo]/g, '0');
-        quantity = quantity.replace(/[Ss]/g, '5');
-        quantity = quantity.replace(/22/g, '2');
-        quantity = quantity.replace(/33/g, '3');
-        quantity = quantity.replace(/44/g, '4');
-        
-        const cardKey = `${section}_${setNumber}`;
-        
-        if (!cardData.has(cardKey)) {
-          cardData.set(cardKey, { section, setNumber: parseInt(setNumber) });
-        }
-        
-        const card = cardData.get(cardKey);
-        card[type] = parseInt(quantity) || 0;
-      }
-    });
-    
-    // Second pass: update cards that have both total and played data
-    cardData.forEach((data, cardKey) => {
-      // Only process cards that have both total and played values
-      if (data.total !== undefined && data.played !== undefined) {
-        const cardIndex = updatedCards.findIndex(card => 
-          card.section === data.section && card.setNumber === data.setNumber
-        );
-        
-        if (cardIndex !== -1) {
-          updatedCards[cardIndex].played = data.played;
+        // Only process 'played' fields for mainboard count
+        if (type === 'played') {
+          let quantity = String(fieldData.valueString || '');
+          quantity = quantity.replace(/[li|I]/g, '1');
+          quantity = quantity.replace(/[Oo]/g, '0');
+          quantity = quantity.replace(/[Ss]/g, '5');
+          quantity = quantity.replace(/22/g, '2');
+          quantity = quantity.replace(/33/g, '3');
+          quantity = quantity.replace(/44/g, '4');
+          
+          const cardIndex = updatedCards.findIndex(card => 
+            card.section === section && card.setNumber === parseInt(setNumber)
+          );
+          
+          if (cardIndex !== -1) {
+            updatedCards[cardIndex].played = parseInt(quantity) || 0;
+          }
         }
       }
     });
