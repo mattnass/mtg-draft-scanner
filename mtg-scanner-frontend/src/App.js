@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Upload, AlertCircle } from 'lucide-react';
 
 // Complete card database
 const EDGE_OF_ETERNITIES_CARDS = {
@@ -350,6 +351,12 @@ const EDGE_OF_ETERNITIES_CARDS = {
 };
 
 function MTGDecklistApp() {
+  const [image, setImage] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState(null);
+  const fileInputRef = useRef(null);
+
   // Initialize all cards with 0 played count
   const initializeCards = () => {
     const sections = [
@@ -380,6 +387,151 @@ function MTGDecklistApp() {
   };
 
   const [cards, setCards] = useState(initializeCards());
+
+  // Image compression function
+  const compressImage = async (file, maxSizeMB = 3.8) => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        let { width, height } = img;
+        const maxDimension = 2000;
+        
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width *= ratio;
+          height *= ratio;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const targetSize = maxSizeMB * 1024 * 1024;
+        let quality = 0.9;
+        
+        const tryCompress = (qual) => {
+          canvas.toBlob((blob) => {
+            if (blob.size > targetSize && qual > 0.6) {
+              tryCompress(qual - 0.1);
+            } else {
+              resolve(blob);
+            }
+          }, 'image/jpeg', qual);
+        };
+        
+        tryCompress(quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Parse Azure Document Intelligence response
+  const parseAzureResponse = (azureResponse) => {
+    const updatedCards = [...cards];
+    const fields = azureResponse.analyzeResult?.documents?.[0]?.fields || {};
+    
+    Object.entries(fields).forEach(([fieldName, fieldData]) => {
+      const match = fieldName.match(/^(\w+)_(total|played)_(\d+)$/);
+      if (match && fieldData.valueString && fieldData.valueString !== '(Not found)') {
+        const [, section, type, setNumber] = match;
+        
+        let quantity = String(fieldData.valueString || '');
+        quantity = quantity.replace(/[li|I]/g, '1');
+        quantity = quantity.replace(/[Oo]/g, '0');
+        quantity = quantity.replace(/[Ss]/g, '5');
+        quantity = quantity.replace(/22/g, '2');
+        quantity = quantity.replace(/33/g, '3');
+        quantity = quantity.replace(/44/g, '4');
+        
+        const cardIndex = updatedCards.findIndex(card => 
+          card.section === section && card.setNumber === parseInt(setNumber)
+        );
+        
+        if (cardIndex !== -1) {
+          const card = updatedCards[cardIndex];
+          if (type === 'played') {
+            card.played = parseInt(quantity) || 0;
+          }
+        }
+      }
+    });
+    
+    return updatedCards;
+  };
+
+  // Real Azure API call
+  const analyzeImage = async (imageFile) => {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    try {
+      const response = await fetch('https://mtg-draft-scanner-production.up.railway.app/api/analyze-decklist', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('API call failed:', error);
+      throw error;
+    }
+  };
+
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+    
+    setImage(URL.createObjectURL(file));
+    setIsAnalyzing(true);
+    setError(null);
+    setDebugInfo(null);
+    
+    try {
+      let fileToSend = file;
+      
+      if (file.size > 3145728) { // 3MB in bytes
+        fileToSend = await compressImage(file);
+      }
+      
+      const azureResponse = await analyzeImage(fileToSend);
+      setDebugInfo({
+        totalFields: Object.keys(azureResponse.analyzeResult?.documents?.[0]?.fields || {}).length,
+        originalSize: file.size,
+        compressedSize: fileToSend.size
+      });
+      
+      const updatedCards = parseAzureResponse(azureResponse);
+      setCards(updatedCards);
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setError(`Failed to analyze image: ${err.message}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageUpload(file);
+  };
+
+  // Reset all cards to 0
+  const resetAllCards = () => {
+    const resetCards = cards.map(card => ({
+      ...card,
+      played: 0
+    }));
+    setCards(resetCards);
+  };
 
   // Update card quantities
   const updateCard = (cardIndex, value) => {
@@ -422,15 +574,79 @@ function MTGDecklistApp() {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header with mainboard count */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs text-gray-500">Mainboard</div>
-              <div className="text-2xl font-bold text-blue-600">{totalMainboard}</div>
+        {/* Header with scan and mainboard */}
+        <div className="grid grid-cols-12 gap-4 mb-4">
+          {/* Scan Section */}
+          <div className="col-span-6 bg-white rounded-lg shadow p-4">
+            <div className="flex items-center gap-4">
+              {!image ? (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="bg-blue-600 text-white py-2 px-4 rounded text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors"
+                >
+                  <Upload size={16} />
+                  Scan Decklist
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <img src={image} alt="Preview" className="w-12 h-12 object-contain rounded border" />
+                  <button
+                    onClick={() => {
+                      setImage(null);
+                      setError(null);
+                      setDebugInfo(null);
+                      resetAllCards();
+                    }}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Change Image
+                  </button>
+                </div>
+              )}
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              {/* Loading */}
+              {isAnalyzing && (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                  <span className="text-xs text-gray-600">Analyzing...</span>
+                </div>
+              )}
+
+              {/* Debug Info */}
+              {debugInfo && (
+                <div className="text-xs text-gray-600">
+                  Found {debugInfo.totalFields} fields
+                </div>
+              )}
+
+              {/* Error */}
+              {error && (
+                <div className="flex items-center gap-1 text-red-700">
+                  <AlertCircle size={14} />
+                  <span className="text-xs">{error}</span>
+                </div>
+              )}
             </div>
-            <div className="text-sm text-gray-600">
-              MTG Draft Pool Scanner - Edge of Eternities
+          </div>
+
+          {/* Mainboard Count */}
+          <div className="col-span-6 bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs text-gray-500">Mainboard</div>
+                <div className="text-2xl font-bold text-blue-600">{totalMainboard}</div>
+              </div>
+              <div className="text-xs text-gray-500">
+                MTG Draft Pool Scanner - Edge of Eternities
+              </div>
             </div>
           </div>
         </div>
