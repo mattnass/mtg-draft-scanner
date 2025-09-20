@@ -486,6 +486,33 @@ function MTGDecklistApp() {
     }
   };
 
+  // Card row component to avoid repetition
+  const CardRow = ({ card, section, colorClass }) => {
+    const globalIndex = cards.findIndex(c => c === card);
+    const isBasicLands = section === 'basic_lands';
+    const maxQuantity = isBasicLands ? 20 : 9;
+    
+    return (
+      <div className="flex items-center gap-1 text-xs">
+        <select
+          value={card.played}
+          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
+          className="w-10 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500 text-xs"
+        >
+          {Array.from({ length: maxQuantity + 1 }, (_, i) => i).map(num => (
+            <option key={num} value={num}>{num}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          value={card.name}
+          onChange={(e) => updateCardName(globalIndex, e.target.value)}
+          className={`flex-1 border-none bg-transparent font-medium ${colorClass} focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs`}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
@@ -562,27 +589,9 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">WHITE</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'white').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-yellow-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'white').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="white" colorClass="text-yellow-700" />
+                  ))}
                 </div>
               </div>
 
@@ -590,27 +599,9 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BLUE</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'blue').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-blue-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'blue').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="blue" colorClass="text-blue-700" />
+                  ))}
                 </div>
               </div>
 
@@ -618,27 +609,9 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BLACK</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'black').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-gray-900 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'black').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="black" colorClass="text-gray-900" />
+                  ))}
                 </div>
               </div>
 
@@ -646,27 +619,9 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">RED</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'red').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-red-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'red').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="red" colorClass="text-red-700" />
+                  ))}
                 </div>
               </div>
             </div>
@@ -677,51 +632,15 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">GREEN</div>
                 <div className="space-y-0.5 mb-4">
-                  {cards.filter(card => card.section === 'green').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-green-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'green').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="green" colorClass="text-green-700" />
+                  ))}
                 </div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">COLORLESS</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'colorless').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-gray-600 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'colorless').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="colorless" colorClass="text-gray-600" />
+                  ))}
                 </div>
               </div>
 
@@ -729,51 +648,15 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">MULTICOLOR</div>
                 <div className="space-y-0.5 mb-4">
-                  {cards.filter(card => card.section === 'multi').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-purple-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'multi').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="multi" colorClass="text-purple-700" />
+                  ))}
                 </div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">ARTIFACTS</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'artifact').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-amber-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'artifact').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="artifact" colorClass="text-amber-700" />
+                  ))}
                 </div>
               </div>
 
@@ -781,51 +664,15 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">NONBASIC LANDS</div>
                 <div className="space-y-0.5 mb-4">
-                  {cards.filter(card => card.section === 'nonbasic').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-stone-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'nonbasic').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="nonbasic" colorClass="text-stone-700" />
+                  ))}
                 </div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">STELLAR SIGHTS 1</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'stellar_sights_1').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-indigo-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'stellar_sights_1').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="stellar_sights_1" colorClass="text-indigo-700" />
+                  ))}
                 </div>
               </div>
 
@@ -833,75 +680,21 @@ function MTGDecklistApp() {
               <div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">STELLAR SIGHTS 2</div>
                 <div className="space-y-0.5 mb-4">
-                  {cards.filter(card => card.section === 'stellar_sights_2').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-indigo-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'stellar_sights_2').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="stellar_sights_2" colorClass="text-indigo-700" />
+                  ))}
                 </div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">SPECIAL GUESTS</div>
                 <div className="space-y-0.5 mb-4">
-                  {cards.filter(card => card.section === 'special_guests').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-pink-700 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'special_guests').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="special_guests" colorClass="text-pink-700" />
+                  ))}
                 </div>
                 <div className="bg-gray-800 text-white px-2 py-1 text-xs font-bold uppercase mb-1">BASIC LANDS</div>
                 <div className="space-y-0.5">
-                  {cards.filter(card => card.section === 'basic_lands').map((card) => {
-                    const globalIndex = cards.findIndex(c => c === card);
-                    return (
-                      <div key={`${card.section}_${card.setNumber}`} className="flex items-center gap-1 text-xs">
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          value={card.played}
-                          onChange={(e) => updateCardQuantity(globalIndex, e.target.value)}
-                          className="w-7 text-center border border-gray-300 rounded px-0.5 py-0.5 focus:ring-1 focus:ring-blue-500"
-                        />
-                        <input
-                          type="text"
-                          value={card.name}
-                          onChange={(e) => updateCardName(globalIndex, e.target.value)}
-                          className="flex-1 border-none bg-transparent font-medium text-green-600 focus:ring-1 focus:ring-blue-500 rounded px-1 py-0.5 text-xs"
-                        />
-                      </div>
-                    );
-                  })}
+                  {cards.filter(card => card.section === 'basic_lands').map((card) => (
+                    <CardRow key={`${card.section}_${card.setNumber}`} card={card} section="basic_lands" colorClass="text-green-600" />
+                  ))}
                 </div>
               </div>
             </div>
